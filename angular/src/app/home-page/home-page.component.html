@@ -1,0 +1,66 @@
+<div class="home">
+
+  <div class="left-menu">
+    <div class="label">
+      Информация об игре
+    </div>
+    <div class="info">
+      Player 1 (17 очков) <
+      <br>
+      <br>
+      Player 2 (12 очков)
+      <br>
+      <br>
+      <br>
+      <br>
+      Ход игрока Player 1...
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="field">
+      <div *ngFor="let f of fieldArray">
+        <div class="cell"
+             [ngClass]="{'center': cell=='c', 'white': cell=='w', 'blue': cell=='b', 'navy': cell=='n', 'pink': cell=='p', 'red': cell=='r'}"
+             *ngFor="let cell of f">
+        </div>
+      </div>
+    </div>
+
+    <div class="available-letters">
+      Ваши буквы:
+      <div class="letters">
+        <div class="cell">Д</div>
+        <div class="cell">У</div>
+        <div class="cell">С</div>
+        <div class="cell">Е</div>
+        <div class="cell">Н</div>
+        <div class="cell">З</div>
+        <div class="cell">А</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-row">
+      <div class="cell center"></div>&nbsp;&nbsp; - клетка для начала игры
+    </div>
+    <div class="legend-row">
+      <div class="cell white"></div>&nbsp;&nbsp; - очки без умножения
+    </div>
+    <div class="legend-row">
+      <div class="cell blue"></div>&nbsp;&nbsp; - удвоение очков за букву
+    </div>
+    <div class="legend-row">
+      <div class="cell navy"></div>&nbsp;&nbsp; - утроение очков за букву
+    </div>
+    <div class="legend-row">
+      <div class="cell pink"></div>&nbsp;&nbsp; - удвоение очков за слово
+    </div>
+    <div class="legend-row">
+      <div class="cell red"></div>&nbsp;&nbsp; - утроение очков за слово
+    </div>
+  </div>
+</div>
