@@ -1,4 +1,5 @@
 import {Component, OnInit} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
 
 @Component({
   selector: 'app-home-page',
@@ -25,10 +26,11 @@ export class HomePageComponent implements OnInit {
     ['r', 'w', 'w', 'b', 'w', 'w', 'w', 'r', 'w', 'w', 'w', 'b', 'w', 'w', 'r'],
   ];
 
-  constructor() {
+  constructor(private http: HttpClient) {
   }
 
   ngOnInit() {
+    this.http.get('api/example').subscribe(x => console.log(x));
   }
 
 }
