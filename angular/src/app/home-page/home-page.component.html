@@ -22,8 +22,8 @@
     <div class="field">
       <div *ngFor="let f of fieldArray">
         <div class="cell"
-             [ngClass]="{'center': cell=='c', 'white': cell=='w', 'blue': cell=='b', 'navy': cell=='n', 'pink': cell=='p', 'red': cell=='r'}"
-             *ngFor="let cell of f">
+             [ngClass]="{'center': cell[0]=='c', 'white': cell[0]=='w', 'blue': cell[0]=='b', 'navy': cell[0]=='n', 'pink': cell[0]=='p', 'red': cell[0]=='r'}"
+             *ngFor="let cell of f">{{cell[1]}}
         </div>
       </div>
     </div>
@@ -31,13 +31,7 @@
     <div class="available-letters">
       Ваши буквы:
       <div class="letters">
-        <div class="cell">Д</div>
-        <div class="cell">У</div>
-        <div class="cell">С</div>
-        <div class="cell">Е</div>
-        <div class="cell">Н</div>
-        <div class="cell">З</div>
-        <div class="cell">А</div>
+        <div *ngFor="let l of letters" class="cell">{{l}}</div>
       </div>
     </div>
 
