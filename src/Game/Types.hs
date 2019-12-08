@@ -1,16 +1,7 @@
 module Game.Types where
 
 import Data.List
-
-
-data Point 
-    = Simple -- Green field
-    | DoubleLetter -- Light blue double points for letter
-    | DoubleWord -- Pink double points for word
-    | TripleLetter -- Blue tripple points for letter
-    | TrippleWord -- Red tripple p. for word
-
-type Board = [Point]
+import Data.Char (toUpper)
 
 -- Symbols which can be set into field point
 data Symbol 
@@ -40,10 +31,20 @@ data Symbol
     | X
     | Y
     | Z
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord, Enum, Read)
 
 
-sybmolsPoints = [
+data Point 
+    = Simple {symbol :: Maybe Symbol } -- Green field
+    | DoubleLetter {symbol :: Maybe Symbol} -- Light blue double points for letter
+    | DoubleWord {symbol :: Maybe Symbol}-- Pink double points for word
+    | TrippleLetter {symbol :: Maybe Symbol}-- Blue tripple points for letter
+    | TrippleWord {symbol :: Maybe Symbol} -- Red tripple p. for word
+    deriving (Show)
+
+type Board = [Point]
+
+symbolsPoints = [
     (A, 1),
     (B, 3),
     (C, 3),
@@ -74,3 +75,29 @@ sybmolsPoints = [
 data Player = First | Second
 
 data GameState = Game { board :: Board, player :: Player }
+
+getSymbPoints :: Symbol -> Int
+getSymbPoints x = snd $ head $ filter (\(s, _) -> s == x) symbolsPoints
+
+fromString :: [Char] -> Symbol
+fromString x = read x :: Symbol
+
+-- Get number of points for passed Char
+pointsForChar x =  (getSymbPoints . fromString) [toUpper x]
+
+doubleRow :: [a] -> [a]
+doubleRow x = (++) x $ tail $ reverse x
+
+tripple = replicate 3 
+double = replicate 2
+quarduple = replicate 4
+
+emptyBoard = doubleRow $ map doubleRow [
+    [TrippleWord Nothing, Simple Nothing, Simple Nothing, DoubleLetter Nothing] ++ tripple (Simple Nothing) ++ [TrippleWord Nothing],
+    [Simple Nothing, DoubleWord Nothing] ++ (tripple $ Simple Nothing) ++ [TrippleLetter Nothing] ++ (double $ Simple Nothing),
+    (double $ Simple Nothing) ++ [DoubleWord Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleLetter Nothing, Simple Nothing],
+    [DoubleLetter Nothing] ++ (double $ Simple Nothing) ++ [DoubleWord Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleLetter Nothing],
+    (quarduple $ Simple Nothing) ++ [DoubleWord Nothing] ++ (tripple $ Simple Nothing),
+    [Simple Nothing, TrippleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [TrippleLetter Nothing] ++ (double $ Simple Nothing),
+    (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleLetter Nothing, Simple Nothing],
+    [TrippleWord Nothing] ++ (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleWord Nothing]]
