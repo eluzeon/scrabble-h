@@ -15,7 +15,9 @@ import           System.IO
 -- * api
 
 type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
-  "checkState" :> Capture "gameNumber" Integer :> Get '[JSON] ResponseForWhileTrue
+  "checkState" :> Capture "gameNumber" Int :> Get '[JSON] ResponseForWhileTrue :<|>
+  "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
+  "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String]
 
 exampleApi :: Proxy ExampleApi
 exampleApi = Proxy
@@ -37,25 +39,29 @@ mkApp = return $ serve exampleApi server
 server :: Server ExampleApi
 server = 
 	initGame :<|>
-	exampleAction
+	checkState :<|>
+	changeState :<|>
+	changeLetters
 
 initGame :: Handler ResponseForInitGame
-initGame = return $ ResponseForInitGame 4 2 [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+initGame = return $ ResponseForInitGame (PlayerAndGameInfo 4 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
-exampleAction :: Integer -> Handler ResponseForWhileTrue
-exampleAction 4 = return $ ResponseForWhileTrue True 2 10 0 'w'
-exampleAction _ = return $ ResponseForWhileTrue False 1 10 0 'w'
+checkState :: Int -> Handler ResponseForWhileTrue
+checkState _ = return $ ResponseForWhileTrue False 1 2 [13, 10] $ Changes 10 0 'w'
 
-exampleResponse :: String
-exampleResponse = "Oh shit, it works!"
+changeState :: ChangesForSendChanges -> Handler [String]
+changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+
+changeLetters :: Int -> Handler [String]
+changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {
     isStateChanged :: Bool,
-    playerTurnNumber :: Integer,
-    positionX :: Integer,
-    positionY :: Integer,
-    letter :: Char
+    playerTurnNumber :: Int,
+    numberOfPlayers :: Int,
+    points :: [Int],
+    changes :: Changes
   }
   deriving (Eq, Show, Generic)
 
@@ -64,11 +70,41 @@ instance FromJSON ResponseForWhileTrue
 
 data ResponseForInitGame
   = ResponseForInitGame {
-    gameNumber :: Integer,
-    playerNumber :: Integer,
+    playerAndGameInfo :: PlayerAndGameInfo,
     letters :: [String]
   }
   deriving (Eq, Show, Generic)
 
 instance ToJSON ResponseForInitGame
 instance FromJSON ResponseForInitGame
+
+data Changes
+  = Changes {
+    positionX :: Int,
+    positionY :: Int,
+    letter :: Char
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON Changes
+instance FromJSON Changes
+
+data ChangesForSendChanges
+  = ChangesForSendChanges {
+    allChanges :: [Changes],
+    info :: PlayerAndGameInfo
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChangesForSendChanges
+instance FromJSON ChangesForSendChanges
+
+data PlayerAndGameInfo
+  = PlayerAndGameInfo {
+    gameNumber :: Int,
+    playerNumber :: Int
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON PlayerAndGameInfo
+instance FromJSON PlayerAndGameInfo
