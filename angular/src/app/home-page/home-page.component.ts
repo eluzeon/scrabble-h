@@ -95,12 +95,15 @@ export class HomePageComponent implements OnInit {
   }
 
   startGame() {
-    this.isGameStarted = true;
-    this.isFirstTurn = true;
-    for (let i = 1; i <= this.numberOfPlayers; i++) {
-      this.playerNames.push(i);
-      this.playersPoints.push(0);
-    }
+    this.http.post(`api/startGame/${this.gameNumber}`, null)
+      .subscribe(_ => {
+        this.isGameStarted = true;
+        this.isFirstTurn = true;
+        for (let i = 1; i <= this.numberOfPlayers; i++) {
+          this.playerNames.push(i);
+          this.playersPoints.push(0);
+        }
+      });
   }
 
   clickField(x, y) {
@@ -124,7 +127,7 @@ export class HomePageComponent implements OnInit {
         .subscribe(x => {
           let newLetters = [];
           for (let i = 0; i < this.letters.length; i++) {
-            if(!this.selectedLetters.includes(i)) {
+            if (!this.selectedLetters.includes(i)) {
               newLetters.push(this.letters[i]);
             }
           }
