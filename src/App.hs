@@ -12,7 +12,7 @@ import Network.Wai.Handler.Warp
 import Servant
 import System.IO
 import Game.Types
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans
 
 -- * api
 
@@ -20,7 +20,8 @@ type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
   "checkState" :> Capture "gameNumber" Int :> Get '[JSON] ResponseForWhileTrue :<|>
   "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
   "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String] :<|>
-  "startGame" :> Capture "gameNumber" String :> Post '[JSON] ()
+  "startGame" :> Capture "gameNumber" String :> Post '[JSON] () :<|>
+  "testIO" :> Get '[JSON] [String]
 
 exampleApi :: Proxy ExampleApi
 exampleApi = Proxy
@@ -45,7 +46,8 @@ server =
 	checkState :<|>
 	changeState :<|>
 	changeLetters :<|>
-	startGame
+	startGame :<|>
+	testIO
 
 initGame :: Handler ResponseForInitGame
 initGame = return $ ResponseForInitGame (PlayerAndGameInfo 4 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
@@ -65,6 +67,11 @@ startGame gameNumber = do
 
     return ()  --todo write in file by gameNumber that game has begun
 
+
+testIO :: Handler [String]
+testIO = do
+  liftIO $ putStrLn "Hello, dude!"
+  return ["OK"]
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {
