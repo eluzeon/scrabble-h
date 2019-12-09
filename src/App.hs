@@ -5,13 +5,14 @@
 
 module App where
 
-import           Data.Aeson
-import           GHC.Generics
-import           Network.Wai
-import           Network.Wai.Handler.Warp
-import           Servant
-import           System.IO
-import			 Data.Cache
+import Data.Aeson
+import GHC.Generics
+import Network.Wai
+import Network.Wai.Handler.Warp
+import Servant
+import System.IO
+import Game.Types
+import Control.Monad.IO.Class (liftIO)
 
 -- * api
 
@@ -19,7 +20,7 @@ type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
   "checkState" :> Capture "gameNumber" Int :> Get '[JSON] ResponseForWhileTrue :<|>
   "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
   "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String] :<|>
-  "startGame" :> Capture "gameNumber" Int :> Post '[JSON] ()
+  "startGame" :> Capture "gameNumber" String :> Post '[JSON] ()
 
 exampleApi :: Proxy ExampleApi
 exampleApi = Proxy
@@ -58,8 +59,12 @@ changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'],
 changeLetters :: Int -> Handler [String]
 changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
-startGame :: Int -> Handler ()
-startGame gameNumber = return () --todo write in file by gameNumber that game has begun
+startGame :: String -> Handler ()
+startGame gameNumber = do
+	liftIO $ Data.Aeson.encodeFile (gameNumber ++ ".json") emptyBoard
+
+    return ()  --todo write in file by gameNumber that game has begun
+
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {

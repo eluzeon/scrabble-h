@@ -1,7 +1,11 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Game.Types where
 
 import Data.List
 import Data.Char (toUpper)
+import Data.Aeson
+import GHC.Generics
 
 -- Symbols which can be set into field point
 data Symbol 
@@ -31,7 +35,10 @@ data Symbol
     | X
     | Y
     | Z
-    deriving (Show, Eq, Ord, Enum, Read)
+    deriving (Show, Eq, Ord, Enum, Read, Generic)
+
+instance ToJSON Symbol
+instance FromJSON Symbol
 
 
 data Point 
@@ -40,7 +47,10 @@ data Point
     | DoubleWord {symbol :: Maybe Symbol}-- Pink double points for word
     | TrippleLetter {symbol :: Maybe Symbol}-- Blue tripple points for letter
     | TrippleWord {symbol :: Maybe Symbol} -- Red tripple p. for word
-    deriving (Show)
+    deriving (Show, Generic)
+
+instance ToJSON Point
+instance FromJSON Point
 
 type Board = [Point]
 
