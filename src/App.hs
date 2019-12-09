@@ -11,13 +11,15 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant
 import           System.IO
+import           Control.Monad.Trans
 
 -- * api
 
 type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
   "checkState" :> Capture "gameNumber" Int :> Get '[JSON] ResponseForWhileTrue :<|>
   "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
-  "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String]
+  "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String] :<|>
+  "testIO" :> Get '[JSON] [String] 
 
 exampleApi :: Proxy ExampleApi
 exampleApi = Proxy
@@ -41,7 +43,8 @@ server =
 	initGame :<|>
 	checkState :<|>
 	changeState :<|>
-	changeLetters
+  changeLetters :<|>
+  testIO
 
 initGame :: Handler ResponseForInitGame
 initGame = return $ ResponseForInitGame (PlayerAndGameInfo 4 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
@@ -54,6 +57,11 @@ changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'],
 
 changeLetters :: Int -> Handler [String]
 changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+
+testIO :: Handler [String]
+testIO = do
+  liftIO $ putStrLn "Hello, dude!"
+  return ["OK"]
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {

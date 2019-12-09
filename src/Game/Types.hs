@@ -42,7 +42,7 @@ data Point
     | TrippleWord {symbol :: Maybe Symbol} -- Red tripple p. for word
     deriving (Show)
 
-type Board = [Point]
+type Board = [[Point]]
 
 symbolsPoints = [
     (A, 1),
@@ -72,10 +72,6 @@ symbolsPoints = [
     (Y, 4),
     (Z, 10)]    
 
-data Player = First | Second
-
-data GameState = Game { board :: Board, player :: Player }
-
 getSymbPoints :: Symbol -> Int
 getSymbPoints x = snd $ head $ filter (\(s, _) -> s == x) symbolsPoints
 
@@ -92,6 +88,7 @@ tripple = replicate 3
 double = replicate 2
 quarduple = replicate 4
 
+emptyBoard :: Board
 emptyBoard = doubleRow $ map doubleRow [
     [TrippleWord Nothing, Simple Nothing, Simple Nothing, DoubleLetter Nothing] ++ tripple (Simple Nothing) ++ [TrippleWord Nothing],
     [Simple Nothing, DoubleWord Nothing] ++ (tripple $ Simple Nothing) ++ [TrippleLetter Nothing] ++ (double $ Simple Nothing),
