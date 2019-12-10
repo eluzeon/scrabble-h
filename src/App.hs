@@ -52,19 +52,30 @@ initGame :: Handler ResponseForInitGame
 initGame = do
     liftIO $ doesFileExist ("1" ++ ".json") >>= \case
         True -> putStrLn "Yes" 
-        False -> Data.Aeson.encodeFile ("1" ++ ".json") $ ObjectForSingleGame False (ResponseForWhileTrue 1 2 [0] $ [Changes 0 0 ' ']) emptyBoard
+        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] [Changes 0 0 ' ']) emptyBoard
     
     item <- liftIO $ decodeFileStrict ("1" ++ ".json") :: Handler (Maybe ObjectForSingleGame)
     
     case item of
-        Nothing -> return $ ResponseForInitGame (PlayerAndGameInfo 1 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
-        Just obj -> return $ ResponseForInitGame (PlayerAndGameInfo 1 $ (+) 1 $ numberOfPlayers $ playersAndChangesInfo obj) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+        Nothing -> throwError err500
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) emptyBoard
+            return $ ResponseForInitGame (PlayerAndGameInfo 1 $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
-initGameLoop :: String -> Handler ResponseForInitGame
+initGameLoop :: Int -> Handler ResponseForInitGame
 initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo 1 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
+
+
 checkState :: String -> Handler ResponseForWhileTrue
-checkState gameNumber = return $ ResponseForWhileTrue 1 2 [13, 10] $ [Changes 10 0 'w']
+checkState gameNumber = do
+    item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+
+    case item of
+        Nothing -> throwError err422
+        Just (ObjectForSingleGame responseForWhileTrue board) -> return $ responseForWhileTrue
+
+
 
 changeState :: ChangesForSendChanges -> Handler [String]
 changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
@@ -72,13 +83,22 @@ changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'],
 changeLetters :: Int -> Handler [String]
 changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
+
+
 startGame :: String -> Handler ()
-startGame gameNumber =
-    return ()
+startGame gameNumber = do
+    item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+
+    case item of
+        Nothing -> throwError err422
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue True playerTurnNumber numberOfPlayers playersPoints changes) emptyBoard
+            return ()
+
+
 
 data ObjectForSingleGame
   = ObjectForSingleGame {
-    isGameStarted :: Bool,
     playersAndChangesInfo :: ResponseForWhileTrue,
     board :: [[Point]]
   }
@@ -89,6 +109,7 @@ instance FromJSON ObjectForSingleGame
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {
+    isGameStarted :: Bool,
     playerTurnNumber :: Int,
     numberOfPlayers :: Int,
     playersPoints :: [Int],
