@@ -20,7 +20,7 @@ import System.Directory (doesFileExist, doesDirectoryExist)
 type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
   "checkState" :> Capture "gameNumber" String :> Get '[JSON] ResponseForWhileTrue :<|>
   "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
-  "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String] :<|>
+  "changeLetters" :> ReqBody '[JSON] SkipTurnBody :> Post '[JSON] [String] :<|>
   "startGame" :> Capture "gameNumber" String :> Post '[JSON] ()
 
 exampleApi :: Proxy ExampleApi
@@ -60,10 +60,10 @@ initGame = do
         Nothing -> throwError err500
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
             liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) emptyBoard
-            return $ ResponseForInitGame (PlayerAndGameInfo 1 $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+            return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
 initGameLoop :: Int -> Handler ResponseForInitGame
-initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo 1 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo "1" 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
 
 
@@ -78,22 +78,32 @@ checkState gameNumber = do
 
 
 changeState :: ChangesForSendChanges -> Handler [String]
-changeState (allChanges (gameNumber playerNumber)) = do
+changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber playerNumber)) = do
     item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
 
     case item of
         Nothing -> throwError err422
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
-            (let nextPlayer = case (playerTurnNumber == numberOfPlayers) of
-              True -> 1
-              False -> (1 + playerTurnNumber)
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board)
+            let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board
             return $ take (length allChanges) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
+changeLetters :: SkipTurnBody -> Handler [String]
+changeLetters (SkipTurnBody gameNumber n) = do
+    item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+    
+    case item of
+        Nothing -> throwError err500
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+            let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board
+            return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
-
-changeLetters :: Int -> Handler [String]
-changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+getNextPlayer :: Int -> Int -> Int
+getNextPlayer playerTurnNumber numberOfPlayers
+    | playerTurnNumber == numberOfPlayers = 1
+    | otherwise = playerTurnNumber + 1
+ 
 
 
 
@@ -165,10 +175,20 @@ instance FromJSON ChangesForSendChanges
 
 data PlayerAndGameInfo
   = PlayerAndGameInfo {
-    gameNumber :: Int,
+    gameNumber :: String,
     playerNumber :: Int
   }
   deriving (Eq, Show, Generic)
 
 instance ToJSON PlayerAndGameInfo
 instance FromJSON PlayerAndGameInfo
+
+data SkipTurnBody
+  = SkipTurnBody {
+    gameNumberForSkipTurn :: String,
+    countToChange :: Int
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON SkipTurnBody
+instance FromJSON SkipTurnBody
