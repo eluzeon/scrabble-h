@@ -27,7 +27,6 @@ export class HomePageComponent implements OnInit {
   ];
 
   isGameStarted = false;
-  isFirstTurn = false;
   numberOfPlayers = 0;
   playerNames = [];
   playersPoints = [];
@@ -66,16 +65,17 @@ export class HomePageComponent implements OnInit {
             clearInterval(whileTrue);
             this.isYourTurn = true;
           }
-          if (x.isStateChanged) {
-            this.isFirstTurn = false;
-            this.changeState(x.changes.positionX, x.changes.positionY, x.changes.letter);
-          }
 
-          this.playerTurnNumber = x.playerNumber;
-          this.playersPoints = x.points;
-        } else {
-          this.numberOfPlayers = x.numberOfPlayers;
+          x.changes.forEach(xx=>{
+            this.changeState(xx.positionX, xx.positionY, xx.letter);
+          });
+
+          this.playerTurnNumber = x.playerTurnNumber;
+          this.playersPoints = x.playersPoints;
+        } else if(x.isGameStarted) {
+          this.initStartGame();
         }
+        this.numberOfPlayers = x.numberOfPlayers;
       });
     }, 2000);
   }
@@ -91,12 +91,18 @@ export class HomePageComponent implements OnInit {
   }
 
   changeState(posX, posY, letter) {
-    this.fieldArray[posX][14 - posY][1] = letter;
+    this.fieldArray[posX][posY][1] = letter;
   }
 
   startGame() {
+    this.http.post(`api/startGame/${this.gameNumber}`, null)
+      .subscribe(_ => {
+        this.initStartGame();
+      });
+  }
+
+  initStartGame() {
     this.isGameStarted = true;
-    this.isFirstTurn = true;
     for (let i = 1; i <= this.numberOfPlayers; i++) {
       this.playerNames.push(i);
       this.playersPoints.push(0);
@@ -104,10 +110,10 @@ export class HomePageComponent implements OnInit {
   }
 
   clickField(x, y) {
-    if (this.selectedLetters.length > 0 && this.fieldArray[x][14 - y][1] == '') {
+    if (this.selectedLetters.length > 0 && this.fieldArray[x][y][1] == '') {
       this.changesBody.push({
         positionX: x,
-        positionY: 14 - y,
+        positionY: y,
         letter: this.letters[this.selectedLetters[0]]
       });
       this.changeState(x, y, this.letters[this.selectedLetters[0]]);
@@ -120,17 +126,21 @@ export class HomePageComponent implements OnInit {
     if (this.selectedLetters.length == 0) {
       alert('Choose letters first');
     } else {
-      this.http.post(`api/changeLetters/${this.selectedLetters.length}`, null)
+      this.http.post(`api/changeLetters`, {
+        gameNumberForSkipTurn: this.gameNumber,
+        countToChange: this.selectedLetters.length
+      })
         .subscribe(x => {
           let newLetters = [];
           for (let i = 0; i < this.letters.length; i++) {
-            if(!this.selectedLetters.includes(i)) {
+            if (!this.selectedLetters.includes(i)) {
               newLetters.push(this.letters[i]);
             }
           }
           this.letters = newLetters.concat(x);
           this.selectedLetters = [];
           this.startListening();
+          this.isYourTurn = false;
         });
     }
   }
@@ -147,6 +157,7 @@ export class HomePageComponent implements OnInit {
       this.changesBody = [];
       this.selectedLetters = [];
       this.startListening();
+      this.isYourTurn = false;
     });
   }
 }

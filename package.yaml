@@ -27,6 +27,7 @@ dependencies:
 - aeson
 - wai
 - warp
+- directory
 
 library:
   source-dirs: src
