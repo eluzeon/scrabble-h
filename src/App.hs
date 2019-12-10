@@ -78,7 +78,19 @@ checkState gameNumber = do
 
 
 changeState :: ChangesForSendChanges -> Handler [String]
-changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+changeState (allChanges (gameNumber playerNumber)) = do
+    item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+
+    case item of
+        Nothing -> throwError err422
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+            (let nextPlayer = case (playerTurnNumber == numberOfPlayers) of
+              True -> 1
+              False -> (1 + playerTurnNumber)
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board)
+            return $ take (length allChanges) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+
+
 
 changeLetters :: Int -> Handler [String]
 changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
@@ -92,7 +104,7 @@ startGame gameNumber = do
     case item of
         Nothing -> throwError err422
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue True playerTurnNumber numberOfPlayers playersPoints changes) emptyBoard
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue True playerTurnNumber numberOfPlayers playersPoints changes) board
             return ()
 
 
