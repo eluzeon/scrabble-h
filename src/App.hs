@@ -12,16 +12,16 @@ import Network.Wai.Handler.Warp
 import Servant
 import System.IO
 import Game.Types
-import Control.Monad.Trans
+import Control.Monad.IO.Class (liftIO)
+import System.Directory (doesFileExist, doesDirectoryExist)
 
 -- * api
 
 type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
-  "checkState" :> Capture "gameNumber" Int :> Get '[JSON] ResponseForWhileTrue :<|>
+  "checkState" :> Capture "gameNumber" String :> Get '[JSON] ResponseForWhileTrue :<|>
   "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
   "changeLetters" :> Capture "countToChange" Int :> Post '[JSON] [String] :<|>
-  "startGame" :> Capture "gameNumber" String :> Post '[JSON] () :<|>
-  "testIO" :> Get '[JSON] [String]
+  "startGame" :> Capture "gameNumber" String :> Post '[JSON] ()
 
 exampleApi :: Proxy ExampleApi
 exampleApi = Proxy
@@ -42,18 +42,29 @@ mkApp = return $ serve exampleApi server
 
 server :: Server ExampleApi
 server = 
-	initGame :<|>
-	checkState :<|>
-	changeState :<|>
-	changeLetters :<|>
-	startGame :<|>
-	testIO
+    initGame :<|>
+    checkState :<|>
+    changeState :<|>
+    changeLetters :<|>
+    startGame
 
 initGame :: Handler ResponseForInitGame
-initGame = return $ ResponseForInitGame (PlayerAndGameInfo 4 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+initGame = do
+    liftIO $ doesFileExist ("1" ++ ".json") >>= \case
+        True -> putStrLn "Yes" 
+        False -> Data.Aeson.encodeFile ("1" ++ ".json") $ ObjectForSingleGame False (ResponseForWhileTrue 1 2 [0] $ [Changes 0 0 ' ']) emptyBoard
+    
+    item <- liftIO $ decodeFileStrict ("1" ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+    
+    case item of
+        Nothing -> return $ ResponseForInitGame (PlayerAndGameInfo 1 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+        Just obj -> return $ ResponseForInitGame (PlayerAndGameInfo 1 $ (+) 1 $ numberOfPlayers $ playersAndChangesInfo obj) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
-checkState :: Int -> Handler ResponseForWhileTrue
-checkState gameNumber = return $ ResponseForWhileTrue False 1 2 [13, 10] $ Changes 10 0 'w'
+initGameLoop :: String -> Handler ResponseForInitGame
+initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo 1 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+
+checkState :: String -> Handler ResponseForWhileTrue
+checkState gameNumber = return $ ResponseForWhileTrue 1 2 [13, 10] $ [Changes 10 0 'w']
 
 changeState :: ChangesForSendChanges -> Handler [String]
 changeState changes = return $ take (length $ allChanges changes) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
@@ -62,24 +73,26 @@ changeLetters :: Int -> Handler [String]
 changeLetters n = return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
 
 startGame :: String -> Handler ()
-startGame gameNumber = do
-	liftIO $ Data.Aeson.encodeFile (gameNumber ++ ".json") emptyBoard
+startGame gameNumber =
+    return ()
 
-    return ()  --todo write in file by gameNumber that game has begun
+data ObjectForSingleGame
+  = ObjectForSingleGame {
+    isGameStarted :: Bool,
+    playersAndChangesInfo :: ResponseForWhileTrue,
+    board :: [[Point]]
+  }
+  deriving (Eq, Show, Generic)
 
-
-testIO :: Handler [String]
-testIO = do
-  liftIO $ putStrLn "Hello, dude!"
-  return ["OK"]
+instance ToJSON ObjectForSingleGame
+instance FromJSON ObjectForSingleGame
 
 data ResponseForWhileTrue
   = ResponseForWhileTrue {
-    isStateChanged :: Bool,
     playerTurnNumber :: Int,
     numberOfPlayers :: Int,
-    points :: [Int],
-    changes :: Changes
+    playersPoints :: [Int],
+    changes :: [Changes]
   }
   deriving (Eq, Show, Generic)
 

@@ -61,18 +61,20 @@ export class HomePageComponent implements OnInit {
   startListening() {
     let whileTrue = setInterval(() => {
       this.http.get<any>(`api/checkState/${this.gameNumber}`).subscribe(x => {
+        console.log(x);
         if (this.isGameStarted) {
           if (x.playerTurnNumber == this.playerNumber) {
             clearInterval(whileTrue);
             this.isYourTurn = true;
           }
-          if (x.isStateChanged) {
-            this.isFirstTurn = false;
-            this.changeState(x.changes.positionX, x.changes.positionY, x.changes.letter);
-          }
 
-          this.playerTurnNumber = x.playerNumber;
-          this.playersPoints = x.points;
+          x.changes.forEach(xx=>{
+            this.changeState(xx.positionX, xx.positionY, xx.letter);
+          });
+
+
+          this.playerTurnNumber = x.playerTurnNumber;
+          this.playersPoints = x.playersPoints;
         } else {
           this.numberOfPlayers = x.numberOfPlayers;
         }

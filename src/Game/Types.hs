@@ -47,7 +47,7 @@ data Point
     | DoubleWord {symbol :: Maybe Symbol}-- Pink double points for word
     | TrippleLetter {symbol :: Maybe Symbol}-- Blue tripple points for letter
     | TrippleWord {symbol :: Maybe Symbol} -- Red tripple p. for word
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 instance ToJSON Point
 instance FromJSON Point
