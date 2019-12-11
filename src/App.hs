@@ -12,8 +12,26 @@ import Network.Wai.Handler.Warp
 import Servant
 import System.IO
 import Game.Types
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class
 import System.Directory (doesFileExist, doesDirectoryExist)
+import System.Random
+
+-- testMonad = liftIO getRandomIndex
+
+returnNLettersFromGetLetters :: Int -> [Int] -> IO ()
+returnNLettersFromGetLetters 0 arr = print arr
+returnNLettersFromGetLetters n arr = do
+  index <- liftIO getRandomIndex
+  liftIO $ print index
+  returnNLettersFromGetLetters (n - 1) (index:arr)
+
+getRandomIndex :: IO Int
+getRandomIndex = do
+        g <- newStdGen
+        randomRIO (0, 5)
+
+getLetters :: [String]
+getLetters = ["Q","W","E","R","T","Y"]
 
 -- * api
 

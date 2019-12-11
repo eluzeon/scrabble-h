@@ -28,6 +28,7 @@ dependencies:
 - wai
 - warp
 - directory
+- random
 
 library:
   source-dirs: src
