@@ -2,6 +2,7 @@ module Game.Logic where
 
 
 import Game.Types
+import Data.List
 
 
 
@@ -42,8 +43,46 @@ wordMultipliers points = map getOperator $ filter fltP points
               getOperator (TrippleWord (Just x)) = (* 3)
               getOperator (TrippleWord Nothing) = (* 1)
 
+
+calculatePointsFromList :: [(Int, Int)] -> Board -> Int
+calculatePointsFromList coords board = foldr (\x acc -> x acc) (foldr (\x acc -> x acc) 0 $ letterMultipliers points) $ wordMultipliers $ points
+        where points = map (\x -> getPoint x board) coords
+
+
 -- Calculates proints for word using
 -- start index and end index of board
 calculatePoints :: (Int, Int) -> (Int, Int) -> Board -> Int
-calculatePoints from to board = foldr (\x acc -> x acc) (foldr (\x acc -> x acc) 0 $ letterMultipliers points) $ wordMultipliers points
-        where points = map (\x -> getPoint x board) $ getRowPairs from to
+calculatePoints from to board = calculatePointsFromList (getRowPairs from to) board
+
+
+commonValidate :: (Int, Int) -> Bool
+commonValidate x = fst x >= 0 && fst x <= 14 && snd x >= 0 && snd x <= 14
+
+
+-- Validates if list of numbers is chained: (1,2,3,4,5), not (1, 3, 6,)
+validateChainSorted :: [Int] -> Bool
+validateChainSorted [] = True
+validateChainSorted [a] = True
+validateChainSorted (a:an:as) = a + 1 == an && (validateChain $ [an] ++ as)
+
+
+validateChain :: [Int] -> Bool
+validateChain = validateChainSorted . sort
+
+
+validateVertical :: [(Int, Int)] -> Bool
+validateVertical [] = True
+validateVertical [a] = True
+validateVertical lst = validateChain (map snd lst) && (all (\x -> x == fst a) $ map fst lst) && all commonValidate lst
+        where a = lst !! 0
+
+
+validateHorizontal :: [(Int, Int)] -> Bool
+validateHorizontal [] = True
+validateHorizontal [a] = True
+validateHorizontal lst = validateChain (map fst lst) && (all (\x -> x == snd a) $ map snd lst) && all commonValidate lst
+        where a = lst !! 0
+
+
+validateIndexes :: [(Int, Int)] -> Bool
+validateIndexes idxs = validateHorizontal idxs || validateVertical idxs

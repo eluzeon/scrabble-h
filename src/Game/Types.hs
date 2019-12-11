@@ -88,6 +88,15 @@ getSymbPoints x = snd $ head $ filter (\(s, _) -> s == x) symbolsPoints
 fromString :: [Char] -> Symbol
 fromString x = read x :: Symbol
 
+fromIndex :: Int -> Symbol
+fromIndex = toEnum
+
+fromIndexList :: [Int] -> [Symbol]
+fromIndexList = map fromIndex
+
+toChar :: Symbol -> Char
+toChar x = (show x) !!0
+
 -- Get number of points for passed Char
 pointsForChar x =  (getSymbPoints . fromString) [toUpper x]
 
