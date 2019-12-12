@@ -35,6 +35,7 @@ data Symbol
     | X
     | Y
     | Z
+    | Any
     deriving (Show, Eq, Ord, Enum, Read, Generic)
 
 instance ToJSON Symbol
@@ -80,12 +81,14 @@ symbolsPoints = [
     (W, 4),
     (X, 8),
     (Y, 4),
-    (Z, 10)]    
+    (Z, 10),
+    (Any, 0)]
 
 getSymbPoints :: Symbol -> Int
 getSymbPoints x = snd $ head $ filter (\(s, _) -> s == x) symbolsPoints
 
 fromString :: [Char] -> Symbol
+fromString "ANY" = Any :: Symbol
 fromString x = read x :: Symbol
 
 -- Get number of points for passed Char
@@ -108,3 +111,21 @@ emptyBoard = doubleRow $ map doubleRow [
     [Simple Nothing, TrippleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [TrippleLetter Nothing] ++ (double $ Simple Nothing),
     (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleLetter Nothing, Simple Nothing],
     [TrippleWord Nothing] ++ (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleWord Nothing]]
+
+defaultLettersPool :: [String]
+defaultLettersPool = (takeLetterNTimes "E" 12) ++ (takeLetterNTimes "A" 9) ++ (takeLetterNTimes "I" 9) ++
+    (takeLetterNTimes "O" 8) ++ (takeLetterNTimes "N" 6) ++ (takeLetterNTimes "R" 6) ++
+    (takeLetterNTimes "T" 6) ++ (takeLetterNTimes "L" 4) ++ (takeLetterNTimes "S" 4) ++
+    (takeLetterNTimes "U" 4) ++ (takeLetterNTimes "D" 4) ++ (takeLetterNTimes "G" 3) ++
+    (takeLetterNTimes "B" 2) ++ (takeLetterNTimes "C" 2) ++ (takeLetterNTimes "M" 2) ++
+    (takeLetterNTimes "P" 2) ++ (takeLetterNTimes "F" 2) ++ (takeLetterNTimes "H" 2) ++
+    (takeLetterNTimes "V" 2) ++ (takeLetterNTimes "W" 2) ++ (takeLetterNTimes "Y" 2) ++
+    (takeLetterNTimes "K" 1) ++ (takeLetterNTimes "J" 1) ++ (takeLetterNTimes "X" 1) ++
+    (takeLetterNTimes "Q" 1) ++ (takeLetterNTimes "Z" 1) ++ (takeLetterNTimes "ANY" 2)
+
+takeLetterNTimes :: String -> Int -> [String]
+takeLetterNTimes letter n = takeLetterNTimes' letter n []
+
+takeLetterNTimes' :: String -> Int -> [String] -> [String]
+takeLetterNTimes' _ 0 arr = arr
+takeLetterNTimes' letter n arr = takeLetterNTimes' letter (n - 1) (letter : arr)

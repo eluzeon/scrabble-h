@@ -16,22 +16,6 @@ import Control.Monad.IO.Class
 import System.Directory (doesFileExist, doesDirectoryExist)
 import System.Random
 
--- testMonad = liftIO getRandomIndex
-
-returnNLettersFromGetLetters :: Int -> [Int] -> IO ()
-returnNLettersFromGetLetters 0 arr = print arr
-returnNLettersFromGetLetters n arr = do
-  index <- liftIO getRandomIndex
-  liftIO $ print index
-  returnNLettersFromGetLetters (n - 1) (index:arr)
-
-getRandomIndex :: IO Int
-getRandomIndex = do
-        g <- newStdGen
-        randomRIO (0, 5)
-
-getLetters :: [String]
-getLetters = ["Q","W","E","R","T","Y"]
 
 -- * api
 
@@ -70,14 +54,14 @@ initGame :: Handler ResponseForInitGame
 initGame = do
     liftIO $ doesFileExist ("1" ++ ".json") >>= \case
         True -> putStrLn "Yes" 
-        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] [Changes 0 0 ' ']) emptyBoard
+        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] [Changes 0 0 ' ']) emptyBoard defaultLettersPool
     
     item <- liftIO $ decodeFileStrict ("1" ++ ".json") :: Handler (Maybe ObjectForSingleGame)
     
     case item of
         Nothing -> throwError err500
-        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
-            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) emptyBoard
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
+            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board letters
             return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
 initGameLoop :: Int -> Handler ResponseForInitGame
@@ -91,7 +75,7 @@ checkState gameNumber = do
 
     case item of
         Nothing -> throwError err422
-        Just (ObjectForSingleGame responseForWhileTrue board) -> return $ responseForWhileTrue
+        Just (ObjectForSingleGame responseForWhileTrue _ _) -> return $ responseForWhileTrue
 
 
 
@@ -101,10 +85,11 @@ changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber play
 
     case item of
         Nothing -> throwError err422
-        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board
-            return $ take (length allChanges) [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board letters
+            result <- liftIO $ returnNLettersFromGetLetters (length allChanges) []
+            return $ result
 
 changeLetters :: SkipTurnBody -> Handler [String]
 changeLetters (SkipTurnBody gameNumber n) = do
@@ -112,10 +97,27 @@ changeLetters (SkipTurnBody gameNumber n) = do
     
     case item of
         Nothing -> throwError err500
-        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board
-            return $ take n [['x'], ['m'], ['v'], ['n'], ['s'], ['q'], ['o']]
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board letters
+            result <- liftIO $ returnNLettersFromGetLetters n []
+            return result
+
+returnNLettersFromGetLetters :: Int -> [String] -> IO [String]
+returnNLettersFromGetLetters 0 arr = return arr
+returnNLettersFromGetLetters n arr = do
+  index <- liftIO getRandomIndex
+  liftIO $ print index
+  returnNLettersFromGetLetters (n - 1) (getLetters !! index : arr)
+
+getRandomIndex :: IO Int
+getRandomIndex = do
+        g <- newStdGen
+        randomRIO (0, 5)
+
+getLetters :: [String]
+getLetters = ["Q","W","E","R","T","Y"]
+
 
 getNextPlayer :: Int -> Int -> Int
 getNextPlayer playerTurnNumber numberOfPlayers
@@ -131,8 +133,8 @@ startGame gameNumber = do
 
     case item of
         Nothing -> throwError err422
-        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board) -> do
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue True playerTurnNumber numberOfPlayers playersPoints changes) board
+        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue True playerTurnNumber numberOfPlayers playersPoints changes) board letters
             return ()
 
 
@@ -140,7 +142,8 @@ startGame gameNumber = do
 data ObjectForSingleGame
   = ObjectForSingleGame {
     playersAndChangesInfo :: ResponseForWhileTrue,
-    board :: [[Point]]
+    board :: [[Point]],
+    lettersPool :: [String]
   }
   deriving (Eq, Show, Generic)
 
