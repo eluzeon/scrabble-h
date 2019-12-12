@@ -1,12 +1,10 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
 
 module App where
 
 import Data.Aeson
-import GHC.Generics
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
@@ -14,8 +12,8 @@ import System.IO
 import Game.Types
 import Control.Monad.IO.Class
 import System.Directory (doesFileExist, doesDirectoryExist)
-import System.Random
-
+import WebApiTypes
+import Extensions
 
 -- * api
 
@@ -64,6 +62,8 @@ initGame = do
             liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board letters
             return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
+
+
 initGameLoop :: Int -> Handler ResponseForInitGame
 initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo "1" 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
 
@@ -88,8 +88,10 @@ changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber play
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
             liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board letters
-            result <- liftIO $ returnNLettersFromGetLetters (length allChanges) []
+            result <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters (length allChanges)
             return $ result
+
+
 
 changeLetters :: SkipTurnBody -> Handler [String]
 changeLetters (SkipTurnBody gameNumber n) = do
@@ -100,30 +102,8 @@ changeLetters (SkipTurnBody gameNumber n) = do
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
             liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board letters
-            result <- liftIO $ returnNLettersFromGetLetters n []
+            result <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters n
             return result
-
-returnNLettersFromGetLetters :: Int -> [String] -> IO [String]
-returnNLettersFromGetLetters 0 arr = return arr
-returnNLettersFromGetLetters n arr = do
-  index <- liftIO getRandomIndex
-  liftIO $ print index
-  returnNLettersFromGetLetters (n - 1) (getLetters !! index : arr)
-
-getRandomIndex :: IO Int
-getRandomIndex = do
-        g <- newStdGen
-        randomRIO (0, 5)
-
-getLetters :: [String]
-getLetters = ["Q","W","E","R","T","Y"]
-
-
-getNextPlayer :: Int -> Int -> Int
-getNextPlayer playerTurnNumber numberOfPlayers
-    | playerTurnNumber == numberOfPlayers = 1
-    | otherwise = playerTurnNumber + 1
- 
 
 
 
@@ -139,77 +119,3 @@ startGame gameNumber = do
 
 
 
-data ObjectForSingleGame
-  = ObjectForSingleGame {
-    playersAndChangesInfo :: ResponseForWhileTrue,
-    board :: [[Point]],
-    lettersPool :: [String]
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ObjectForSingleGame
-instance FromJSON ObjectForSingleGame
-
-data ResponseForWhileTrue
-  = ResponseForWhileTrue {
-    isGameStarted :: Bool,
-    playerTurnNumber :: Int,
-    numberOfPlayers :: Int,
-    playersPoints :: [Int],
-    changes :: [Changes]
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ResponseForWhileTrue
-instance FromJSON ResponseForWhileTrue
-
-data ResponseForInitGame
-  = ResponseForInitGame {
-    playerAndGameInfo :: PlayerAndGameInfo,
-    letters :: [String]
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ResponseForInitGame
-instance FromJSON ResponseForInitGame
-
-data Changes
-  = Changes {
-    positionX :: Int,
-    positionY :: Int,
-    letter :: Char
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON Changes
-instance FromJSON Changes
-
-data ChangesForSendChanges
-  = ChangesForSendChanges {
-    allChanges :: [Changes],
-    info :: PlayerAndGameInfo
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ChangesForSendChanges
-instance FromJSON ChangesForSendChanges
-
-data PlayerAndGameInfo
-  = PlayerAndGameInfo {
-    gameNumber :: String,
-    playerNumber :: Int
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON PlayerAndGameInfo
-instance FromJSON PlayerAndGameInfo
-
-data SkipTurnBody
-  = SkipTurnBody {
-    gameNumberForSkipTurn :: String,
-    countToChange :: Int
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON SkipTurnBody
-instance FromJSON SkipTurnBody
