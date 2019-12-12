@@ -3,6 +3,7 @@ module Game where
 import Test.Tasty
 import Test.Tasty.HUnit
 import Game.Logic
+import Game.Types
 
 -- Chain tests
 testOfValidationChainCorrect = testCase "Correct chain testing" $ assertBool [] $ validateChain [1,2,3,4,5]
@@ -22,8 +23,13 @@ testOfPointsHorizontalOutOfRange = testCase "Horizontal out of range points" $ a
 testOfPointsHorizontalInvalid = testCase "Horizontal invalid" $ assertBool [] $ not $ validateHorizontal [(4, 1), (4, 2), (4, 3), (4,4)]
 
 
-testOfRowsPair = testCase "Valid Rows pairs" $ assertEqual [] [(10,5),(10,6),(10,7),(10,8),(10,9)] $ getRowPairs (10, 5) (10, 9)
+-- global validateIndexes
+testOfValidateIndexesVert = testCase "ValidateIndexes vertical is valid" $ assertBool [] $ validateIndexes [(10, 1), (10, 2), (10, 3)]
+testOfValidateIndexesHor = testCase "ValidateIndexes horizontal is valid" $ assertBool [] $ validateIndexes [(1, 9), (2, 9), (3, 9), (4,9)]
 
+
+testOfRowsPair = testCase "Valid Rows pairs" $ assertEqual [] [(10,5),(10,6),(10,7),(10,8),(10,9)] $ getRowPairs (10, 5) (10, 9)
+testOfRowsPairNotCorrect = testCase "Invalid Rows pairs" $ assertEqual [] [] $ getRowPairs (10, 5) (10, 1)
 
 validationChainTests = testGroup
      "chainValidation tests" 
@@ -40,9 +46,29 @@ horizontalValidationTest = testGroup
 
 utilsTests = testGroup
     "utils functions"
-        [testOfRowsPair]
+        [testOfRowsPair, testOfRowsPairNotCorrect, testOfRowsPair, testOfRowsPairNotCorrect, testOfValidateIndexesHor, testOfValidateIndexesVert]
+
+
+-- Test of types
+testOfDoubleRow = testCase "Valid doubleRow" $ assertEqual [] [1,2,3,4,3,2,1] $ doubleRow [1,2,3,4]
+testOfDoubleRowIncorrect = testCase "Valid single doubleRow" $ assertEqual [] [1] $ doubleRow [1]
+
+testOfGetSymbPointsA = testCase "Valid Symbol points for A" $ assertEqual [] 1 $ getSymbPoints A
+testOfGetSymbPointsQ = testCase "Valid Symbol points for Q"  $ assertEqual [] 10 $ getSymbPoints Q
+testOfGetSymbPointsK = testCase "Valid Symbol points for K" $ assertEqual [] 5 $ getSymbPoints K
+
+
+testOfParser = testCase "Valid parsing of Z" $ assertEqual [] Z $ fromString "Z"
+testOfIndexParser = testCase "Valid parsing from index" $ assertEqual [] X $ fromIndex 23
+
+
+
+typesTests = testGroup
+    "types functions tests"
+        [testOfDoubleRow, testOfDoubleRowIncorrect, testOfGetSymbPointsA,
+        testOfGetSymbPointsK, testOfGetSymbPointsQ, testOfParser, testOfIndexParser]
 
 
 gameTests = testGroup 
     "total game tests"
-        [validationChainTests, verticalValidationTests, horizontalValidationTest, utilsTests]
+        [validationChainTests, verticalValidationTests, horizontalValidationTest, utilsTests, typesTests]
