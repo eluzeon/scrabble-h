@@ -28,6 +28,8 @@ dependencies:
 - wai
 - warp
 - directory
+- tasty
+- tasty-hunit
 
 library:
   source-dirs: src
