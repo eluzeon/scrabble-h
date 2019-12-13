@@ -28,6 +28,7 @@ dependencies:
 - wai
 - warp
 - directory
+- random
 - tasty
 - tasty-hunit
 

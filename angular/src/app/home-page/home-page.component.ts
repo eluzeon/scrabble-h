@@ -126,7 +126,7 @@ export class HomePageComponent implements OnInit {
     if (this.selectedLetters.length == 0) {
       alert('Choose letters first');
     } else {
-      this.http.post(`api/changeLetters`, {
+      this.http.post<any>(`api/changeLetters`, {
         gameNumberForSkipTurn: this.gameNumber,
         countToChange: this.selectedLetters.length
       })
@@ -137,7 +137,7 @@ export class HomePageComponent implements OnInit {
               newLetters.push(this.letters[i]);
             }
           }
-          this.letters = newLetters.concat(x);
+          this.letters = newLetters.concat(x.lettersResult);
           this.selectedLetters = [];
           this.startListening();
           this.isYourTurn = false;
@@ -146,14 +146,14 @@ export class HomePageComponent implements OnInit {
   }
 
   endTurn() {
-    this.http.post('api/sendChanges', {
+    this.http.post<any>('api/sendChanges', {
       allChanges: this.changesBody,
       info: {
         gameNumber: this.gameNumber,
         playerNumber: this.playerNumber
       }
     }).subscribe(x => {
-      this.letters = this.letters.concat(x);
+      this.letters = this.letters.concat(x.lettersResult);
       this.changesBody = [];
       this.selectedLetters = [];
       this.startListening();
