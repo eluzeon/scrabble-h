@@ -105,7 +105,7 @@ changeLetters (SkipTurnBody gameNumber n) = do
     item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
     
     case item of
-        Nothing -> throwError err500
+        Nothing -> throwError err404
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
             (TakeNLettersDto remaining result) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters n

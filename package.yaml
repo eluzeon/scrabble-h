@@ -31,7 +31,10 @@ dependencies:
 - random
 - tasty
 - tasty-hunit
-
+- servant-client
+- QuickCheck
+- servant-quickcheck
+- hspec
 library:
   source-dirs: src
 
