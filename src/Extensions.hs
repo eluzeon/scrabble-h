@@ -3,6 +3,9 @@ module Extensions where
 import Control.Monad.IO.Class
 import System.Random
 import WebApiTypes
+import Game.Types
+import Control.Lens
+
 
 -- from, to, letters, n, IO result
 returnNLettersFromGetLetters :: Int -> Int -> [String] -> Int -> IO TakeNLettersDto
@@ -48,3 +51,25 @@ data TakeNLettersDto
   remainingLetters :: [String],
   lettersToReturn :: [String]
 }
+
+
+getPointData :: Changes -> Board -> Point
+getPointData ch board = case oldPoint of
+  Simple _ -> Simple $ Just $ fromString $ letter ch
+  DoubleLetter _ -> DoubleLetter $ Just $ fromString $ letter ch
+  DoubleWord _ -> DoubleWord $ Just $ fromString $ letter ch
+  TrippleLetter _ -> TrippleLetter $ Just $ fromString $ letter ch
+  TrippleWord _ -> TrippleWord $ Just $ fromString $ letter ch
+  where oldPoint = (board !! (positionY ch) !! (positionX ch))
+
+
+applyForChange :: Changes -> Board -> Board
+applyForChange ch board = board & element (positionY ch) . element (positionX ch) .~ (getPointData ch board)
+
+
+applyChanges :: [Changes] -> Board -> Board
+applyChanges changes initBoard = foldr (\x brd -> applyForChange x brd) initBoard changes
+
+
+fromChanges :: [Changes] -> [(Int, Int)]
+fromChanges changes = map (\x -> (positionX x, positionY x)) changes

@@ -10,6 +10,8 @@ import Network.Wai.Handler.Warp
 import Servant
 import System.IO
 import Game.Types
+import Game.Logic
+import Control.Lens
 import Control.Monad.IO.Class
 import System.Directory (doesFileExist, doesDirectoryExist)
 import WebApiTypes
@@ -94,8 +96,10 @@ changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber play
         Nothing -> throwError err422
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
+            let newBoard = applyChanges allChanges board
+            let newPoints = playersPoints & element (playerTurnNumber - 1) +~ calculatePointsFromList (fromChanges allChanges) newBoard
             (TakeNLettersDto remaining result) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters (length allChanges)
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board remaining
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers newPoints allChanges) newBoard remaining
             return $ LettersArrayToReturn result
 
 
