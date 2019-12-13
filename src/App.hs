@@ -19,8 +19,8 @@ import Extensions
 
 type ExampleApi = "initGame" :> Get '[JSON] ResponseForInitGame :<|>
   "checkState" :> Capture "gameNumber" String :> Get '[JSON] ResponseForWhileTrue :<|>
-  "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] [String] :<|>
-  "changeLetters" :> ReqBody '[JSON] SkipTurnBody :> Post '[JSON] [String] :<|>
+  "sendChanges" :> ReqBody '[JSON] ChangesForSendChanges :> Post '[JSON] LettersArrayToReturn :<|>
+  "changeLetters" :> ReqBody '[JSON] SkipTurnBody :> Post '[JSON] LettersArrayToReturn :<|>
   "startGame" :> Capture "gameNumber" String :> Post '[JSON] ()
 
 exampleApi :: Proxy ExampleApi
@@ -51,16 +51,17 @@ server =
 initGame :: Handler ResponseForInitGame
 initGame = do
     liftIO $ doesFileExist ("1" ++ ".json") >>= \case
-        True -> putStrLn "Yes" 
-        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] [Changes 0 0 ' ']) emptyBoard defaultLettersPool
+        True -> return ()
+        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] []) emptyBoard defaultLettersPool
     
     item <- liftIO $ decodeFileStrict ("1" ++ ".json") :: Handler (Maybe ObjectForSingleGame)
     
     case item of
         Nothing -> throwError err500
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
-            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board letters
-            return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+            (TakeNLettersDto remaining lettersResult) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters 7
+            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board remaining
+            return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) lettersResult
 
 
 
@@ -79,7 +80,7 @@ checkState gameNumber = do
 
 
 
-changeState :: ChangesForSendChanges -> Handler [String]
+changeState :: ChangesForSendChanges -> Handler LettersArrayToReturn
 changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber playerNumber)) = do
     item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
 
@@ -87,13 +88,13 @@ changeState (ChangesForSendChanges allChanges (PlayerAndGameInfo gameNumber play
         Nothing -> throwError err422
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board letters
-            result <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters (length allChanges)
-            return $ result
+            (TakeNLettersDto remaining result) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters (length allChanges)
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints allChanges) board remaining
+            return $ LettersArrayToReturn result
 
 
 
-changeLetters :: SkipTurnBody -> Handler [String]
+changeLetters :: SkipTurnBody -> Handler LettersArrayToReturn
 changeLetters (SkipTurnBody gameNumber n) = do
     item <- liftIO $ decodeFileStrict (gameNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
     
@@ -101,9 +102,9 @@ changeLetters (SkipTurnBody gameNumber n) = do
         Nothing -> throwError err500
         Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
             let nextPlayer = getNextPlayer playerTurnNumber numberOfPlayers
-            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board letters
-            result <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters n
-            return result
+            (TakeNLettersDto remaining result) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters n
+            liftIO $ encodeFile (gameNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted nextPlayer numberOfPlayers playersPoints changes) board remaining
+            return $ LettersArrayToReturn result
 
 
 

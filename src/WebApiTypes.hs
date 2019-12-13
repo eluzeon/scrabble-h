@@ -45,7 +45,7 @@ data Changes
   = Changes {
     positionX :: Int,
     positionY :: Int,
-    letter :: Char
+    letter :: String
   }
   deriving (Eq, Show, Generic)
 
@@ -81,3 +81,12 @@ data SkipTurnBody
 
 instance ToJSON SkipTurnBody
 instance FromJSON SkipTurnBody
+
+data LettersArrayToReturn
+  = LettersArrayToReturn {
+    lettersResult :: [String]
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON LettersArrayToReturn
+instance FromJSON LettersArrayToReturn

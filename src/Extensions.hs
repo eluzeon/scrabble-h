@@ -2,15 +2,16 @@ module Extensions where
 
 import Control.Monad.IO.Class
 import System.Random
+import WebApiTypes
 
 -- from, to, letters, n, IO result
-returnNLettersFromGetLetters :: Int -> Int -> [String] -> Int -> IO [String]
+returnNLettersFromGetLetters :: Int -> Int -> [String] -> Int -> IO TakeNLettersDto
 returnNLettersFromGetLetters from to letters n = returnNLettersFromGetLetters' from to letters n []
 
 -- from, to, letters, n, resultArray, IO result
-returnNLettersFromGetLetters' :: Int -> Int -> [String] -> Int -> [String] -> IO [String]
-returnNLettersFromGetLetters' _ _ [] _ arr = return arr
-returnNLettersFromGetLetters' _ _ _ 0 arr = return arr
+returnNLettersFromGetLetters' :: Int -> Int -> [String] -> Int -> [String] -> IO TakeNLettersDto
+returnNLettersFromGetLetters' _ _ [] _ arr = return $ TakeNLettersDto [] arr
+returnNLettersFromGetLetters' _ _ letters 0 arr = return $ TakeNLettersDto letters arr
 returnNLettersFromGetLetters' from to letters n arr = do
   index <- liftIO $ getRandomIndex from to
   returnNLettersFromGetLetters' from to ((getBeforeIndex index letters) ++ (getAfterIndex index letters)) (n - 1) (letters !! index : arr)
@@ -41,3 +42,9 @@ getNextPlayer :: Int -> Int -> Int
 getNextPlayer playerTurnNumber numberOfPlayers
     | playerTurnNumber == numberOfPlayers = 1
     | otherwise = playerTurnNumber + 1
+
+data TakeNLettersDto
+  = TakeNLettersDto {
+  remainingLetters :: [String],
+  lettersToReturn :: [String]
+}
