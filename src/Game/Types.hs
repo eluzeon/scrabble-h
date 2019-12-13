@@ -119,7 +119,7 @@ emptyBoard = doubleRow $ map doubleRow [
     (quarduple $ Simple Nothing) ++ [DoubleWord Nothing] ++ (tripple $ Simple Nothing),
     [Simple Nothing, TrippleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [TrippleLetter Nothing] ++ (double $ Simple Nothing),
     (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleLetter Nothing, Simple Nothing],
-    [TrippleWord Nothing] ++ (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [DoubleWord Nothing]]
+    [TrippleWord Nothing] ++ (double $ Simple Nothing) ++ [DoubleLetter Nothing] ++ (tripple $ Simple Nothing) ++ [Simple Nothing]]
 
 defaultLettersPool :: [String]
 defaultLettersPool = (takeLetterNTimes "E" 12) ++ (takeLetterNTimes "A" 9) ++ (takeLetterNTimes "I" 9) ++

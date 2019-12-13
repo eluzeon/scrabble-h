@@ -45,7 +45,7 @@ wordMultipliers points = map getOperator $ filter fltP points
 
 
 calculatePointsFromList :: [(Int, Int)] -> Board -> Int
-calculatePointsFromList coords board = foldr (\x acc -> x acc) (foldr (\x acc -> x acc) 0 $ letterMultipliers points) $ wordMultipliers $ points
+calculatePointsFromList coords board = foldr (\_x _acc -> _x _acc) (foldr (\x acc -> x acc) 0 $ letterMultipliers points) $ wordMultipliers points
         where points = map (\x -> getPoint x board) coords
 
 
