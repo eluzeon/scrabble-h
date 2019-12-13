@@ -23,16 +23,19 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary
 import           App
 import           WebApiTypes
+import           Game
+import           Test.Tasty
 
 main :: IO ()
 main = do 
   --hspec test1
   hspec test3
   hspec test2
+  defaultMain gameTests
 
 
 args :: Args
-args = defaultArgs { maxSuccess = 2, chatty = True }
+args = defaultArgs { maxSuccess = 1, chatty = True }
 
 
 instance Arbitrary ChangesForSendChanges where 
