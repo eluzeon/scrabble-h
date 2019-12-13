@@ -49,26 +49,32 @@ server =
     startGame
 
 initGame :: Handler ResponseForInitGame
-initGame = do
-    liftIO $ doesFileExist ("1" ++ ".json") >>= \case
-        True -> return ()
-        False -> encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] []) emptyBoard defaultLettersPool
-    
-    item <- liftIO $ decodeFileStrict ("1" ++ ".json") :: Handler (Maybe ObjectForSingleGame)
-    
-    case item of
-        Nothing -> throwError err500
-        Just (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters) -> do
-            (TakeNLettersDto remaining lettersResult) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters 7
-            liftIO $ encodeFile ("1" ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board remaining
-            return $ ResponseForInitGame (PlayerAndGameInfo "1" $ 1 + numberOfPlayers) lettersResult
+initGame = initGameLoop 1
+
 
 
 
 initGameLoop :: Int -> Handler ResponseForInitGame
-initGameLoop _ = return $ ResponseForInitGame (PlayerAndGameInfo "1" 1) [['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g']]
+initGameLoop gameNumber = do
+    let strNumber = (show gameNumber)
+    liftIO $ doesFileExist (strNumber ++ ".json") >>= \case
+        True -> return ()
+        False -> encodeFile (strNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue False 1 0 [] []) emptyBoard defaultLettersPool
+    
+    item <- liftIO $ decodeFileStrict (strNumber ++ ".json") :: Handler (Maybe ObjectForSingleGame)
+    
+    case item of
+        Nothing -> initGameLoop (gameNumber + 1)
+        Just gameObj -> checkNextGameOrJoinThis gameNumber gameObj
 
-
+checkNextGameOrJoinThis :: Int -> ObjectForSingleGame -> Handler ResponseForInitGame
+checkNextGameOrJoinThis gameNumber (ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber numberOfPlayers playersPoints changes) board letters)
+    | isGameStarted || (numberOfPlayers == 4) = initGameLoop (gameNumber + 1)
+    | otherwise = do
+        let strNumber = (show gameNumber)
+        (TakeNLettersDto remaining lettersResult) <- liftIO $ returnNLettersFromGetLetters 0 (length letters) letters 7
+        liftIO $ encodeFile (strNumber ++ ".json") $ ObjectForSingleGame (ResponseForWhileTrue isGameStarted playerTurnNumber (1 + numberOfPlayers) (playersPoints ++ [0]) changes) board remaining
+        return $ ResponseForInitGame (PlayerAndGameInfo strNumber $ 1 + numberOfPlayers) lettersResult
 
 checkState :: String -> Handler ResponseForWhileTrue
 checkState gameNumber = do
